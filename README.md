@@ -12,6 +12,8 @@ systemctl restart sshd
 systemctl restart httpd
 
 
+
+
 #On Both VyOs systems:
 
 configure
