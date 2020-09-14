@@ -1,16 +1,13 @@
-<!Doctype HTML>
-<html>
-<Header> SEC440 </Header>
-<body>
-on web01:
+#on web01:
 sudo firewall-cmd --zone=public --permanent --add-port=80/tcp
 sudo firewall-cmd --zone=public --permanent --add-port=22/tcp
 yum install -y httpd
 yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 systemctl restart sshd
-systemctl restart httpd(edited)
-[9:46 PM]
-On Both VyOs systems:
+systemctl restart httpd
+
+
+#On Both VyOs systems:
 configure
 set nat source rule 10 description “NAT FROM DMZ to WAN”
 set nat source rule 10 outbound-interface eth0
