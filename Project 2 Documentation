@@ -1,1 +1,96 @@
+#On both VyOs systems:
+set nat source rule 11 outbound-interface eth1
+set nat source rule 11 source address 10.0.6.0/24
+set nat source rule 11 translation address masquerade
+commit
+save
 
+set nat source rule 12 outbound-interface eth2
+set nat source rule 12 source address 10.0.5.0/24
+set nat source rule 12 translation address masquerade
+commit
+save
+
+set nat source rule 15 outbound-interface eth2
+set nat source rule 15 source address 10.0.5.0/24
+set nat source rule 15 translation address masquerade
+commit
+save
+
+set nat destination rule 10 translation address 10.0.6.10
+commit 
+save
+
+
+#On Web01 and Web02:
+
+Configured the Ips with nmtui
+
+sudo firewall-cmd --permanent --add-port=80/tcp
+firewall-cmd --reload
+
+#On ha 1 and 2:
+Configured ip address in the /etc/netplan/50-cloud-init.yaml file.
+
+network:
+  ethernets:
+    ens160:
+     dhcp4: no
+     addresses: [10.0.6.1/24]
+     gateway4: 10.0.6.1
+     nameservers:
+       addresses: [10.0.6.1]
+   version: 2
+
+
+
+Apt-get update
+Apt-get haproxy
+Apt-get keepalived
+
+vi into the /etc/haproxy/haproxy.cfg file on both HA systems, at the bottom add:
+
+frontend www
+        bind 10.0.6.10:80
+        default_backend webapps
+        option forwardfor
+        
+listen stats
+        bind 10.0.6.11:80
+        stats enable
+        
+backend webapps
+        balance roundrobin
+        server web01-isaac 10.0.5.100:80 check
+        server web02-isaac 10.0.5.101:80 check
+        
+        
+        
+        
+# on both HA vi into the /etc/keepalived/keepalived.conf:
+
+vrrp_instance LB_VIP {
+        interface ens160
+        state MASTER
+        priority 101
+        virtual_router_id 50
+        
+        authentication { 
+                auth_type PASS
+                auth_pass Syspass
+        }
+        
+        virtual_ipaddress {
+                10.0.6.10
+        }
+        
+        track_script {
+                chk_haproxy
+        }
+}
+
+
+#on both ha systems:
+
+systemctl restart haproxy
+systemctl restart keepalived
